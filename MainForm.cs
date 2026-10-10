@@ -1,4 +1,4 @@
-﻿namespace AutoClicker;
+namespace AutoClicker;
 
 public class MainForm : Form
 {
@@ -54,8 +54,8 @@ public class MainForm : Form
 
         var hint = new Label
         {
-            Text = "Move the mouse over the target and press F6 (click spot) or F7 (text field) to capture it, " +
-                   "or use the buttons. F8 starts/stops from anywhere.",
+            Text = "Move the mouse over the target and press F6 / Ctrl+Alt+1 (click spot) or F7 / Ctrl+Alt+2 (text field) to capture it, " +
+                   "or use the buttons. F8 / Ctrl+Alt+3 starts/stops from anywhere.",
             AutoSize = true,
             MaximumSize = new Size(480, 0),
         };
@@ -89,15 +89,21 @@ public class MainForm : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        NativeMethods.RegisterHotKey(Handle, HotkeyPickClick, NativeMethods.MOD_NONE, (uint)Keys.F6);
-        NativeMethods.RegisterHotKey(Handle, HotkeyPickText, NativeMethods.MOD_NONE, (uint)Keys.F7);
-        NativeMethods.RegisterHotKey(Handle, HotkeyStartStop, NativeMethods.MOD_NONE, (uint)Keys.F8);
+        const uint ctrlAlt = 0x0001 | 0x0002; // MOD_ALT | MOD_CONTROL
+        // F-keys may need Fn on laptops, so Ctrl+Alt+1/2/3 work as well.
+        bool ok = NativeMethods.RegisterHotKey(Handle, HotkeyPickClick, NativeMethods.MOD_NONE, (uint)Keys.F6)
+                & NativeMethods.RegisterHotKey(Handle, HotkeyPickText, NativeMethods.MOD_NONE, (uint)Keys.F7)
+                & NativeMethods.RegisterHotKey(Handle, HotkeyStartStop, NativeMethods.MOD_NONE, (uint)Keys.F8);
+        ok &= NativeMethods.RegisterHotKey(Handle, HotkeyPickClick + 10, ctrlAlt, (uint)Keys.D1)
+            & NativeMethods.RegisterHotKey(Handle, HotkeyPickText + 10, ctrlAlt, (uint)Keys.D2)
+            & NativeMethods.RegisterHotKey(Handle, HotkeyStartStop + 10, ctrlAlt, (uint)Keys.D3);
+        if (!ok) _status.Text = "Some hotkeys could not be registered - use the buttons";
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
         _cts?.Cancel();
-        for (int i = 1; i <= 3; i++) NativeMethods.UnregisterHotKey(Handle, i);
+        foreach (int i in new[] { 1, 2, 3, 11, 12, 13 }) NativeMethods.UnregisterHotKey(Handle, i);
         base.OnFormClosing(e);
     }
 
@@ -105,7 +111,7 @@ public class MainForm : Form
     {
         if (m.Msg == NativeMethods.WM_HOTKEY)
         {
-            switch (m.WParam.ToInt32())
+            switch (m.WParam.ToInt32() % 10)
             {
                 case HotkeyPickClick: _clickPos = CaptureCursor(_clickPosLabel); break;
                 case HotkeyPickText: _textPos = CaptureCursor(_textPosLabel); break;
@@ -136,8 +142,8 @@ public class MainForm : Form
     {
         if (_cts != null) { _cts.Cancel(); return; }
         if (!_doClick.Checked && !_doType.Checked) { MessageBox.Show("Enable at least one action."); return; }
-        if (_doClick.Checked && _clickPos is null) { MessageBox.Show("Set the click position first."); return; }
-        if (_doType.Checked && _textPos is null) { MessageBox.Show("Set the text position first."); return; }
+        if (_doClick.Checked && _clickPos is null) { MessageBox.Show("Set the click position first: hover over the target and press F6 (or Ctrl+Alt+1), or press the Set button and wait for the countdown."); return; }
+        if (_doType.Checked && _textPos is null) { MessageBox.Show("Set the text position first: hover over the text field and press F7 (or Ctrl+Alt+2), or press the Set button and wait for the countdown."); return; }
         _ = RunAsync();
     }
 

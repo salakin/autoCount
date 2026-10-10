@@ -38,14 +38,18 @@ internal static class NativeMethods
     public static void Click(Point p, bool right = false)
     {
         SetCursorPos(p.X, p.Y);
+        Thread.Sleep(50); // let the target window register the move
         uint down = right ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_LEFTDOWN;
         uint up = right ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
-        var inputs = new[]
-        {
-            new INPUT { type = INPUT_MOUSE, u = new InputUnion { mi = new MOUSEINPUT { dwFlags = down } } },
-            new INPUT { type = INPUT_MOUSE, u = new InputUnion { mi = new MOUSEINPUT { dwFlags = up } } },
-        };
-        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+        SendMouse(down);
+        Thread.Sleep(40); // some apps ignore a zero-length press
+        SendMouse(up);
+    }
+
+    private static void SendMouse(uint flags)
+    {
+        var inputs = new[] { new INPUT { type = INPUT_MOUSE, u = new InputUnion { mi = new MOUSEINPUT { dwFlags = flags } } } };
+        SendInput(1, inputs, Marshal.SizeOf<INPUT>());
     }
 
     /// <summary>Types one character (Unicode, so layout independent). A newline sends Enter.</summary>
