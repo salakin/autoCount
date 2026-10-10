@@ -1,6 +1,4 @@
-bin/
+﻿bin/
 obj/
 dist/
 .vs/
-
-FreeProxy/working-proxies.txt
