@@ -180,7 +180,7 @@ public class MainForm : Form
                     NativeMethods.Click(tp!.Value); // focus the target field
                     await Task.Delay(150, ct);
                     string text = ParagraphGenerator.Create(sentences);
-                    _preview.Text = text;
+                    _preview.Text = text.Replace("\n", Environment.NewLine);
                     foreach (char c in text)
                     {
                         ct.ThrowIfCancellationRequested();
