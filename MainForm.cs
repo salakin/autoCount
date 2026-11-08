@@ -7,11 +7,12 @@ public class MainForm : Form
     private readonly Label _clickPosLabel = new() { Text = "Not set", AutoSize = true, Margin = new Padding(3, 6, 3, 3) };
     private readonly Label _textPosLabel = new() { Text = "Not set", AutoSize = true, Margin = new Padding(3, 6, 3, 3) };
     private readonly CheckBox _doClick = new() { Text = "Click at position", Checked = true, AutoSize = true };
-    private readonly CheckBox _doType = new() { Text = "Type random paragraph at position", Checked = true, AutoSize = true };
+    private readonly CheckBox _doType = new() { Text = "Type random text at position", Checked = true, AutoSize = true };
     private readonly CheckBox _rightClick = new() { Text = "Right button", AutoSize = true };
     private readonly NumericUpDown _clickInterval = Num(50, 3_600_000, 1000);
     private readonly NumericUpDown _typeInterval = Num(100, 3_600_000, 5000);
     private readonly NumericUpDown _sentences = Num(1, 50, 3);
+    private readonly ComboBox _textStyle = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 120, Items = { "Random code", "Sentences" }, SelectedIndex = 0 };
     private readonly NumericUpDown _charDelay = Num(0, 1000, 20);
     private readonly NumericUpDown _repeat = Num(0, 1_000_000, 0);
     private readonly CheckBox _pressEnter = new() { Text = "Press Enter after typing", AutoSize = true };
@@ -46,7 +47,8 @@ public class MainForm : Form
         Row(grid, _doType, null, null);
         Row(grid, "Text position:", _textPosLabel, pickText);
         Row(grid, "Type every (ms):", _typeInterval, null);
-        Row(grid, "Sentences per paragraph:", _sentences, null);
+        Row(grid, "Text style:", _textStyle, null);
+        Row(grid, "Sentences / code statements:", _sentences, null);
         Row(grid, "Delay per character (ms):", _charDelay, null);
         Row(grid, _pressEnter, null, null);
         Row(grid, "Repeat count (0 = forever):", _repeat, null);
@@ -61,7 +63,7 @@ public class MainForm : Form
         };
         Row(grid, hint, null, null);
         Row(grid, _startStop, null, null);
-        Row(grid, new Label { Text = "Last typed paragraph:", AutoSize = true }, null, null);
+        Row(grid, new Label { Text = "Last typed text:", AutoSize = true }, null, null);
         Row(grid, _preview, null, null);
 
         Controls.Add(grid);
@@ -157,6 +159,7 @@ public class MainForm : Form
         bool click = _doClick.Checked, type = _doType.Checked, right = _rightClick.Checked, enter = _pressEnter.Checked;
         int clickMs = (int)_clickInterval.Value, typeMs = (int)_typeInterval.Value;
         int sentences = (int)_sentences.Value, charDelay = (int)_charDelay.Value, repeat = (int)_repeat.Value;
+        bool code = _textStyle.SelectedIndex == 0;
         var cp = _clickPos;
         var tp = _textPos;
 
@@ -179,7 +182,7 @@ public class MainForm : Form
                 {
                     NativeMethods.Click(tp!.Value); // focus the target field
                     await Task.Delay(150, ct);
-                    string text = ParagraphGenerator.Create(sentences);
+                    string text = code ? CodeGenerator.Create(sentences) : ParagraphGenerator.Create(sentences);
                     _preview.Text = text.Replace("\n", Environment.NewLine);
                     foreach (char c in text)
                     {
